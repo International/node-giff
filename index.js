@@ -31,19 +31,23 @@ let nspawn = function() {
   console.log("spawning:" + args)
   return spawn('git', args);
 }
+
+let base64Diff = "";
+
 // git diff
 var giff = nspawn();
 giff.stdout.on('data', function (data) {
   // git diff result encode to base64
-  let base64Diff = data.toString('Base64');
-  outputJs(realPath, base64Diff);
+  base64Diff += data;
 });
 
 giff.stderr.on('data', function (data) {
   console.log('stderr: ' + data);
 });
 
-giff.on('exit', function (code) {
+giff.stdout.on('end', function (code) {
+  outputJs(realPath, base64Diff);
+  open_in_browser();
 });
 
 function open_in_browser() {
@@ -52,13 +56,12 @@ function open_in_browser() {
     binary = "sensible-browser"
   }
   let command = `${binary} ${realPath}/index.html`;
+  console.log("open_in_browser");
   exec(command);
 }
 
-console.log(`${realPath}/index.html`);
-open_in_browser()
-
 function outputJs(dirPath, data) {
-  let outputJsText = 'var lineDiffExample=window.atob("' + data + '");';
+  let writingB64 = new Buffer(data).toString('Base64');
+  let outputJsText = 'var lineDiffExample=window.atob("' + writingB64 + '");';
   fs.writeFileSync(`${dirPath}/dest/diff.js`, outputJsText);
 }
