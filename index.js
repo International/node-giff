@@ -26,8 +26,13 @@ if (program.cached) {
 let realPath = path.dirname(fs.realpathSync(__filename));
 outputJs(realPath, '');
 
+let nspawn = function() {
+  let args = ['diff'].concat(program.args).concat(options);
+  console.log("spawning:" + args)
+  return spawn('git', args);
+}
 // git diff
-var giff = spawn('git', ['diff'].concat(program.args).concat(options));
+var giff = nspawn();
 giff.stdout.on('data', function (data) {
   // git diff result encode to base64
   let base64Diff = data.toString('Base64');
@@ -41,8 +46,17 @@ giff.stderr.on('data', function (data) {
 giff.on('exit', function (code) {
 });
 
+function open_in_browser() {
+  let binary = `which open && open `
+  if(/linux/.test(process.platform)) {
+    binary = "sensible-browser"
+  }
+  let command = `${binary} ${realPath}/index.html`;
+  exec(command);
+}
+
 console.log(`${realPath}/index.html`);
-exec(`which open && open ${realPath}/index.html`);
+open_in_browser()
 
 function outputJs(dirPath, data) {
   let outputJsText = 'var lineDiffExample=window.atob("' + data + '");';
